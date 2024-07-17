@@ -26,6 +26,19 @@ namespace BlogApi.Services {
             return new CommentDto { Id = comment.Id, Content = comment.Content, CommentedBy = user , CreatedAt = comment.CreatedAt};
         }
 
+        public async Task<CommentDto> DeleteComment(int commentId) {
+            var user = HelperService.GetCreatedByUser(_httpContextAccessor);
+            var comment = await _appDbContext.Set<Comment>()
+                .Include(c => c.Post)
+                .SingleOrDefaultAsync(c => c.Id == commentId);
+            ArgumentNullException.ThrowIfNull(comment);
+            if (comment.UserId != user.Id) throw new ArgumentException();
+            comment.Post.TotalComments--;
+            _appDbContext.Set<Comment>().Remove(comment);
+            await _appDbContext.SaveChangesAsync();
+            return new CommentDto { Id = comment.Id, CommentedBy = user, Content = comment.Content, CreatedAt = comment.CreatedAt };
+        }
+
         public async Task<CommentDto> UpdateComment(UpdateCommentDto updateCommentDto) {
             var comment = await _appDbContext.Set<Comment>().SingleOrDefaultAsync(c => c.Id == updateCommentDto.CommentId);
             ArgumentNullException.ThrowIfNull(comment);
