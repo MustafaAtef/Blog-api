@@ -19,6 +19,7 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
+builder.Services.AddScoped<IReactService, ReactService>();
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("jwt"));
 
