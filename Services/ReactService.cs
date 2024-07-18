@@ -3,6 +3,7 @@ using BlogApi.Dtos;
 using BlogApi.Dtos.React;
 using BlogApi.Dtos.User;
 using BlogApi.Entities;
+using BlogApi.Exceptions;
 using BlogApi.ServiceContracts;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,7 +19,7 @@ namespace BlogApi.Services {
         }
         public async Task<ReactDto> CreateReact(ReqReactDto reqReactDto) {
             var post = await _appDbContext.Set<Post>().SingleOrDefaultAsync(p => p.Id == reqReactDto.PostId);
-            ArgumentNullException.ThrowIfNull(post);
+            if (post is null) throw new BadRequestException("There isn't a post with the provided id!");
             var user = HelperService.GetCreatedByUser(_httpContextAccessor);
             var react = await _appDbContext.Set<PostReaction>().SingleOrDefaultAsync(pr => pr.PostId == reqReactDto.PostId && pr.UserId == user.Id);
             if (react is null) {
@@ -36,8 +37,7 @@ namespace BlogApi.Services {
 
         public async Task<ReactDto?> DeleteReact(int postId) {
             var post = await _appDbContext.Set<Post>().SingleOrDefaultAsync(p => p.Id == postId);
-            ArgumentNullException.ThrowIfNull(post);
-            var user = HelperService.GetCreatedByUser(_httpContextAccessor);
+            if (post is null) throw new BadRequestException("There isn't a post with the provided id!"); var user = HelperService.GetCreatedByUser(_httpContextAccessor);
             var react = await _appDbContext.Set<PostReaction>()
                 .SingleOrDefaultAsync(pr => pr.PostId == postId && pr.UserId == user.Id);
             if (react is null) return null;
@@ -49,7 +49,7 @@ namespace BlogApi.Services {
 
         public async Task<PageList<ReactDto>> GetAllPostReacts(int postId, SelectionOptions selectionOptions) {
             var post = await _appDbContext.Set<Post>().SingleOrDefaultAsync(p => p.Id == postId);
-            ArgumentNullException.ThrowIfNull(post);
+            if (post is null) throw new BadRequestException("There isn't a post with the provided id!");
             var reacts = await _appDbContext.Set<PostReaction>().Where(pr => pr.PostId == postId)
                 .Skip((selectionOptions.Page - 1) * selectionOptions.PageSize)
                 .Take(selectionOptions.PageSize)

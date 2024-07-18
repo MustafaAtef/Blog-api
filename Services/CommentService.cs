@@ -2,8 +2,11 @@
 using BlogApi.Dtos.Comment;
 using BlogApi.Dtos.User;
 using BlogApi.Entities;
+using BlogApi.Exceptions;
 using BlogApi.ServiceContracts;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
+using System.ComponentModel.Design;
 using System.Security.Claims;
 
 namespace BlogApi.Services {
@@ -17,7 +20,7 @@ namespace BlogApi.Services {
         }
         public async Task<CommentDto> CreateComment(CreateCommentDto createCommentDto) {
             var post = await _appDbContext.Set<Post>().SingleOrDefaultAsync(p => p.Id == createCommentDto.PostId);
-            ArgumentNullException.ThrowIfNull(post);
+            if (post is null) throw new BadRequestException("There isn't a post with the provided id!");
             var user = HelperService.GetCreatedByUser(_httpContextAccessor);
             var comment = new Comment { Content = createCommentDto.Content, PostId = createCommentDto.PostId.Value, UserId = user.Id };
             _appDbContext.Set<Comment>().Add(comment);
@@ -31,8 +34,8 @@ namespace BlogApi.Services {
             var comment = await _appDbContext.Set<Comment>()
                 .Include(c => c.Post)
                 .SingleOrDefaultAsync(c => c.Id == commentId);
-            ArgumentNullException.ThrowIfNull(comment);
-            if (comment.UserId != user.Id) throw new ArgumentException();
+            if (comment is null) throw new BadRequestException("There isn't a comment with the provided id!");
+            if (comment.UserId != user.Id) throw new BadRequestException("Can't delete the comment");
             comment.Post.TotalComments--;
             _appDbContext.Set<Comment>().Remove(comment);
             await _appDbContext.SaveChangesAsync();
@@ -40,11 +43,14 @@ namespace BlogApi.Services {
         }
 
         public async Task<CommentDto> UpdateComment(UpdateCommentDto updateCommentDto) {
-            var comment = await _appDbContext.Set<Comment>().SingleOrDefaultAsync(c => c.Id == updateCommentDto.CommentId);
-            ArgumentNullException.ThrowIfNull(comment);
+            var user = HelperService.GetCreatedByUser(_httpContextAccessor);
+            var comment = await _appDbContext.Set<Comment>()
+                .Include(c => c.Post)
+                .SingleOrDefaultAsync(c => c.Id == updateCommentDto.CommentId);
+            if (comment is null) throw new BadRequestException("There isn't a comment with the provided id!");
+            if (comment.UserId != user.Id) throw new BadRequestException("Can't update the comment");
             comment.Content = updateCommentDto.Content;
             await _appDbContext.SaveChangesAsync();
-            var user = HelperService.GetCreatedByUser(_httpContextAccessor);
             return new CommentDto { Id = comment.Id, Content = comment.Content, CommentedBy = user, CreatedAt = comment.CreatedAt };
         }
     }

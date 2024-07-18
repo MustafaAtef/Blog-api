@@ -5,6 +5,7 @@ using BlogApi.Dtos.Post;
 using BlogApi.Dtos.Tag;
 using BlogApi.Dtos.User;
 using BlogApi.Entities;
+using BlogApi.Exceptions;
 using BlogApi.ServiceContracts;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -21,12 +22,12 @@ namespace BlogApi.Services {
         }
         public async Task<CompletePostDto> CreatePost(CreatePostDto createPostDto) {
             Category? category = await CheckCategory(createPostDto.CategoryId.Value);
-            if (category is null) ArgumentNullException.ThrowIfNull(category);
+            if (category is null) throw new BadRequestException("There isn't a category with the provided id!");
             var tags = new List<TagDto>();
             if (createPostDto.Tags is not null) {
                 tags = await _appDbContext.Set<Tag>().Where(tag => createPostDto.Tags.Contains(tag.Id))
                     .Select(tag => new TagDto { Id = tag.Id, Name = tag.Name }).ToListAsync();
-                if (tags.Count != createPostDto.Tags.Count) throw new ArgumentException();
+                if (tags.Count != createPostDto.Tags.Count) throw new BadRequestException("There aren't tags with the provided ids");
             }
 
 
@@ -126,7 +127,7 @@ namespace BlogApi.Services {
                         }
                     })
                 }).ToListAsync();
-            if (res is null) throw new ArgumentException();
+            if (res is null) throw new BadRequestException("There isn't a post with the provided id!");
             return res[0];
         }
 

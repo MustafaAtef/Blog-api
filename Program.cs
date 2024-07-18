@@ -1,5 +1,6 @@
 using BlogApi;
 using BlogApi.Database;
+using BlogApi.Middlewares;
 using BlogApi.ServiceContracts;
 using BlogApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -8,8 +9,6 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
 
 builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
@@ -43,6 +42,7 @@ builder.Services.AddAuthentication()
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseMiddleware<GlobalErrorHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 

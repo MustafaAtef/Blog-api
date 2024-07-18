@@ -72,6 +72,7 @@ namespace BlogApi.Services
                     ValidateAudience = true,
                     ValidAudience = jwtOptions.Audiance,
                     ValidateIssuerSigningKey = true,
+                    ValidateLifetime = false,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SigningKey))
                 };
 

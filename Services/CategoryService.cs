@@ -2,6 +2,7 @@
 using BlogApi.Dtos;
 using BlogApi.Dtos.Category;
 using BlogApi.Entities;
+using BlogApi.Exceptions;
 using BlogApi.ServiceContracts;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -19,7 +20,7 @@ namespace BlogApi.Services {
             _httpContextAccessor = httpContextAccessor;
         }
         public async Task<CategoryDto> CreateCategory(CreateCategoryDto createCategoryDto) {
-            if (await _isUnique(createCategoryDto.Name) == false) throw new ArgumentException();
+            if (await _isUnique(createCategoryDto.Name) == false) throw new UniqueEntityException("category", "name");
             var category = new Category {
                 CreatedBy = int.Parse(_httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value),
                 Name = createCategoryDto.Name
@@ -59,7 +60,7 @@ namespace BlogApi.Services {
 
         public async Task<CategoryDto> UpdateCategory(UpdateCategoryDto updateCategoryDto) {
             var category = await _appDbContext.Set<Category>().SingleOrDefaultAsync(p => p.Id == updateCategoryDto.Id);
-            if (category is null) throw new ArgumentNullException();
+            if (category is null) throw new BadRequestException("There isn't a category with the provided id!");
             category.Name = updateCategoryDto.Name;
             await _appDbContext.SaveChangesAsync();
             return new CategoryDto {
