@@ -31,5 +31,11 @@ namespace BlogApi.Controllers {
         public async Task<ActionResult<CompletePostDto>> GetPostById(int postId) {
             return await _postService.GetPostById(postId);
         }
+
+        [HttpPut("{postId}")]
+        public async Task<ActionResult<CompletePostDto>> UpdatePost(int postId, UpdatePostDto updatePostDto) {
+            updatePostDto.Id = postId;
+            return await _postService.UpdatePost(updatePostDto);
+        }
     }
 }

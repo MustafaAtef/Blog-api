@@ -9,6 +9,7 @@ using BlogApi.Exceptions;
 using BlogApi.ServiceContracts;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
 namespace BlogApi.Services {
     public class PostService : IPostService {
@@ -21,18 +22,12 @@ namespace BlogApi.Services {
             _httpContextAccessor = httpContextAccessor;
         }
         public async Task<CompletePostDto> CreatePost(CreatePostDto createPostDto) {
-            Category? category = await CheckCategory(createPostDto.CategoryId.Value);
+            Category? category = await _checkCategory(createPostDto.CategoryId);
             if (category is null) throw new BadRequestException("There isn't a category with the provided id!");
-            var tags = new List<TagDto>();
-            if (createPostDto.Tags is not null) {
-                tags = await _appDbContext.Set<Tag>().Where(tag => createPostDto.Tags.Contains(tag.Id))
-                    .Select(tag => new TagDto { Id = tag.Id, Name = tag.Name }).ToListAsync();
-                if (tags.Count != createPostDto.Tags.Count) throw new BadRequestException("There aren't tags with the provided ids");
-            }
-
-
+            var tags = await _getTagsFromIdsAsync(createPostDto.Tags);
+            if (tags.Count != createPostDto.Tags.Count)
+                throw new BadRequestException("There aren't tags with the provided ids");
             var user = HelperService.GetCreatedByUser(_httpContextAccessor);
-
             var post = new Post() {
                 Title = createPostDto.Title,
                 Content = createPostDto.Content,
@@ -43,15 +38,11 @@ namespace BlogApi.Services {
             foreach (var tagId in createPostDto.Tags) {
                 post.PostTags.Add(new PostTag { Post = post, TagId = tagId });
             }
-
             _appDbContext.Set<Post>().Add(post);
             await _appDbContext.SaveChangesAsync();
             return new CompletePostDto { Tags = tags, Title = post.Title, Id = post.Id, CategoryId = post.CategoryId, CategoryName = category.Name, Content = post.Content, CreatedAt = post.CreatedAt, LastModification = post.LastModification, CreatedBy = user, TotalComments = post.TotalComments, TotalReactions = post.TotalReactions, Comments = new List<CommentDto>() };
         }
 
-        private async Task<Category?> CheckCategory(int categoryId) {
-            return await _appDbContext.Set<Category>().SingleOrDefaultAsync(category => category.Id == categoryId);
-        }
 
         public async Task<PageList<CompactPostDto>> GetAllPosts(SelectionOptions selectionOptions) {
             IQueryable<Post> posts = _appDbContext.Set<Post>();
@@ -131,8 +122,56 @@ namespace BlogApi.Services {
             return res[0];
         }
 
-        public Task<CompletePostDto> UpdatePost(UpdatePostDto updatePostDto) {
-            throw new NotImplementedException();
+        public async Task<CompletePostDto> UpdatePost(UpdatePostDto updatePostDto) {
+            var post = await _appDbContext.Set<Post>()
+                .Include(p => p.Comments)
+                .ThenInclude(c => c.User)
+                .SingleOrDefaultAsync(p => p.Id == updatePostDto.Id);
+            if (post is null) throw new BadRequestException("There isn't a post with the provided id!");
+            var category = await _checkCategory(updatePostDto.CategoryId);
+            if (category is null) throw new BadRequestException("There isn't a category with the provided id!");
+            var tags = await _getTagsFromIdsAsync(updatePostDto.Tags);
+            if (tags.Count != updatePostDto.Tags.Count) 
+                throw new BadRequestException("There aren't tags with the provided ids");
+            var user = HelperService.GetCreatedByUser(_httpContextAccessor);
+
+
+            await _appDbContext.Set<PostTag>().Where(pt => pt.PostId == updatePostDto.Id).ExecuteDeleteAsync();
+            post.Title = updatePostDto.Title;
+            post.Content = updatePostDto.Content;
+            post.Category = category;
+            post.LastModification = DateTime.UtcNow;
+            post.PostTags = new List<PostTag>();
+            foreach (var tagId in updatePostDto.Tags) {
+                post.PostTags.Add(new PostTag { Post = post, TagId = tagId });
+            }
+            await _appDbContext.SaveChangesAsync();
+
+            return new CompletePostDto { Tags = tags, Title = post.Title, Id = post.Id, CategoryId = post.CategoryId, CategoryName = category.Name, Content = post.Content, CreatedAt = post.CreatedAt, LastModification = post.LastModification, CreatedBy = user, TotalComments = post.TotalComments, TotalReactions = post.TotalReactions,
+              Comments = post.Comments
+                .Select(comment => new CommentDto {
+                    Id = comment.Id,
+                    Content = comment.Content,
+                    CreatedAt = comment.CreatedAt,
+                    CommentedBy = new CreatedByUserDto {
+                        Id = comment.User.Id,
+                        Email = comment.User.Email,
+                        Image = comment.User.Image,
+                        Username = comment.User.Username
+                    }
+                })
+            };
         }
+        private Task<List<TagDto>> _getTagsFromIdsAsync(IList<int>? tags) {
+            return _appDbContext.Set<Tag>()
+                .Where(tag => tags.Contains(tag.Id))
+                .Select(tag => new TagDto { Id = tag.Id, Name = tag.Name })
+                .ToListAsync();
+        }
+        private Task<Category?> _checkCategory(int? categoryId) {
+            if (categoryId is null) return null;
+            return _appDbContext.Set<Category>().SingleOrDefaultAsync(category => category.Id == categoryId);
+        }
+
     }
 }

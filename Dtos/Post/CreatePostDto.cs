@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+﻿using BlogApi.ValidationAttributes;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System.ComponentModel.DataAnnotations;
 
 namespace BlogApi.Dtos.Post {
@@ -14,7 +15,9 @@ namespace BlogApi.Dtos.Post {
 
         [Required(ErrorMessage = "Category id is required!. Post must belongs to certain category")]
         public int? CategoryId { get; set; }
-        public List<int> Tags { get; set; }
+
+        [MinListElements(1, ErrorMessage ="Post must have at least one tag!")]
+        public IList<int>? Tags { get; set; }
     }
 
 }
