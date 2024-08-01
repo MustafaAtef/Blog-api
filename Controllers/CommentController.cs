@@ -1,11 +1,13 @@
 ﻿using BlogApi.Dtos.Comment;
 using BlogApi.ServiceContracts;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BlogApi.Controllers {
     [Route("api/Posts")]
     [ApiController]
+    [Authorize]
     public class CommentController : ControllerBase {
         private readonly ICommentService _commentService;
 
@@ -15,6 +17,7 @@ namespace BlogApi.Controllers {
         }
 
         [HttpPost("{postId}/Comments")]
+
         public async Task<ActionResult<CommentDto>> CreateComment(int postId, CreateCommentDto createCommentDto) {
             createCommentDto.PostId = postId;
             return await _commentService.CreateComment(createCommentDto);

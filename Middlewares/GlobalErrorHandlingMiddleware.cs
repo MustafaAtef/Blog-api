@@ -20,6 +20,9 @@ namespace BlogApi.Middlewares {
             catch(NotAuthenticatedException) {
                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
             }
+            catch (NotAuthorizedException) {
+                context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+            }
             catch(BadRequestException ex) {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 context.Response.ContentType = "application/json";

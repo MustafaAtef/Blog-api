@@ -3,6 +3,7 @@ using BlogApi.Dtos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using BlogApi.ServiceContracts;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BlogApi.Controllers {
     [Route("api/Posts")]
@@ -16,6 +17,7 @@ namespace BlogApi.Controllers {
         }
 
         [HttpPost("{postId}/Reacts")]
+        [Authorize]
         public async Task<ActionResult<ReactDto>> CreateUpdateReact(int postId, ReqReactDto reqReactDto) {
             reqReactDto.PostId = postId;
             return await _reactService.CreateReact(reqReactDto);
@@ -27,10 +29,9 @@ namespace BlogApi.Controllers {
         }
 
         [HttpDelete("{postId}/Reacts")]
+        [Authorize]
         public async Task<ActionResult<ReactDto>> DeleteReact(int postId) {
-            var deletedReact = await _reactService.DeleteReact(postId);
-            if (deletedReact is null) return NotFound();
-            return deletedReact;
+           return await _reactService.DeleteReact(postId);
         }
     }
 }

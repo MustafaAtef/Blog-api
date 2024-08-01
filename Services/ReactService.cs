@@ -22,8 +22,13 @@ namespace BlogApi.Services {
             if (post is null) throw new BadRequestException("There isn't a post with the provided id!");
             var user = HelperService.GetCreatedByUser(_httpContextAccessor);
             var react = await _appDbContext.Set<PostReaction>().SingleOrDefaultAsync(pr => pr.PostId == reqReactDto.PostId && pr.UserId == user.Id);
-            if (react is null) {
-                react = new PostReaction { PostId = reqReactDto.PostId, UserId = user.Id, reactiontType = (ReactiontType)reqReactDto.ReactionType };
+            if (react is not null && react.UserId != user.Id) throw new NotAuthorizedException(); 
+            else if (react is null) {
+                react = new PostReaction { 
+                    PostId = reqReactDto.PostId,
+                    UserId = user.Id,
+                    reactiontType = (ReactiontType)reqReactDto.ReactionType
+                };
                 _appDbContext.Set<PostReaction>().Add(react);
                 post.TotalReactions++;
                
@@ -35,12 +40,13 @@ namespace BlogApi.Services {
             return new ReactDto { reactiontType = react.reactiontType, ReactedAt = react.ReactedAt, ReactedBy = user };
         }
 
-        public async Task<ReactDto?> DeleteReact(int postId) {
+        public async Task<ReactDto> DeleteReact(int postId) {
             var post = await _appDbContext.Set<Post>().SingleOrDefaultAsync(p => p.Id == postId);
-            if (post is null) throw new BadRequestException("There isn't a post with the provided id!"); var user = HelperService.GetCreatedByUser(_httpContextAccessor);
+            if (post is null) throw new BadRequestException("There isn't a post with the provided id!");
+            var user = HelperService.GetCreatedByUser(_httpContextAccessor);
             var react = await _appDbContext.Set<PostReaction>()
                 .SingleOrDefaultAsync(pr => pr.PostId == postId && pr.UserId == user.Id);
-            if (react is null) return null;
+            if (react is null) throw new BadRequestException("Invalid!");
             _appDbContext.Set<PostReaction>().Remove(react);
             post.TotalReactions--;
             await _appDbContext.SaveChangesAsync();

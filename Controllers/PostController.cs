@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace BlogApi.Controllers {
     [Route("api/Posts")]
     [ApiController]
-    [Authorize]
     public class PostController : ControllerBase {
         private readonly IPostService _postService;
 
@@ -19,6 +18,7 @@ namespace BlogApi.Controllers {
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<ActionResult<CompletePostDto>> CreatePost(CreatePostDto createPostDto) {
             return await _postService.CreatePost(createPostDto);
         }
@@ -33,6 +33,7 @@ namespace BlogApi.Controllers {
         }
 
         [HttpPut("{postId}")]
+        [Authorize]
         public async Task<ActionResult<CompletePostDto>> UpdatePost(int postId, UpdatePostDto updatePostDto) {
             updatePostDto.Id = postId;
             return await _postService.UpdatePost(updatePostDto);

@@ -11,5 +11,6 @@ namespace BlogApi.Services {
                 Username = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Name)?.Value
             };
         }
+        
     }
 }

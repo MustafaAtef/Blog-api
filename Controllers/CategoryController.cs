@@ -3,12 +3,10 @@ using BlogApi.Dtos.Category;
 using BlogApi.ServiceContracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace BlogApi.Controllers {
     [Route("api/categories")]
     [ApiController]
-    [Authorize]
     public class CategoryController : ControllerBase {
         private readonly ICategoryService _categoryService;
 
@@ -18,11 +16,13 @@ namespace BlogApi.Controllers {
         }
 
         [HttpPost]
+        [Authorize(Roles = "3")]
         public async Task<ActionResult<CategoryDto>> CreateCategory(CreateCategoryDto createCategoryDto) {
             return await _categoryService.CreateCategory(createCategoryDto);
         }
 
         [HttpPut]
+        [Authorize(Roles = "3")]
         public async Task<ActionResult<CategoryDto>> UpdateCategory(UpdateCategoryDto updateCategoryDto) {
             return await _categoryService.UpdateCategory(updateCategoryDto);
         }

@@ -47,10 +47,6 @@ app.UseMiddleware<GlobalErrorHandlingMiddleware>();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
-app.Use(async (context, next) => {
-    Console.WriteLine("user is authenticated! and authorize attribute is succedded!");
-    await next(context);
-});
 app.MapControllers();
 
 app.Run();

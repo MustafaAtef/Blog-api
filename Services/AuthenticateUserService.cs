@@ -24,7 +24,7 @@ namespace BlogApi.Services
             if (user is null || !_passwordHashingService.Compare(user.Password, loginUserDto.Password)) {
                 throw new BadRequestException("username or password is invalid!");
             }
-            var tokenRes = _jwtTokenService.Generate(user.Id, user.Username, user.Email, user.Image);
+            var tokenRes = _jwtTokenService.Generate(user.Id, user.Username, user.Email, user.Image, user.RoleId);
 
             user.RefreshToken = tokenRes.RefreshToken;
             user.RefreshTokenExpiration = tokenRes.RefreshTokenExpiration;
@@ -52,7 +52,7 @@ namespace BlogApi.Services
                     throw new UniqueEntityException("user", "email");
             }
             user = new User { Username = signupUserDto.Username, Email = signupUserDto.Email, Password = hash};
-            var tokenRes = _jwtTokenService.Generate(user.Id, user.Username, user.Email, user.Image);
+            var tokenRes = _jwtTokenService.Generate(user.Id, user.Username, user.Email, user.Image, user.RoleId);
             user.RefreshToken = tokenRes.RefreshToken;
             user.RefreshTokenExpiration = tokenRes.RefreshTokenExpiration;
             _appDbContext.Users.Add(user);
@@ -77,7 +77,7 @@ namespace BlogApi.Services
             if (user is null || user.RefreshToken != refreshTokenDto.RefreashToken || user.RefreshTokenExpiration <= DateTime.UtcNow) throw new NotAuthenticatedException();
 
             //generate new access token and refresh token
-            var tokenRes = _jwtTokenService.Generate(user.Id, user.Username, user.Email, user.Image);
+            var tokenRes = _jwtTokenService.Generate(user.Id, user.Username, user.Email, user.Image, user.RoleId);
 
             // update the user record with the new access token and refresh token 
             user.RefreshToken = tokenRes.RefreshToken;

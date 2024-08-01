@@ -17,7 +17,7 @@ namespace BlogApi.Services
             this.jwtOptions = options.Value;
         }
 
-        public JwtTokenDto Generate(int id, string username, string email, string? image) {
+        public JwtTokenDto Generate(int id, string username, string email, string? image, int role) {
 
             //var tokenHandler = new JwtSecurityTokenHandler();
             //var jwtDescriptor = new SecurityTokenDescriptor {
@@ -43,7 +43,8 @@ namespace BlogApi.Services
                     new(ClaimTypes.Name, username),
                     new(ClaimTypes.NameIdentifier, id.ToString()),
                     new(ClaimTypes.Email, email),
-                    new("image", image ?? "")
+                    new("image", image ?? ""),
+                    new(ClaimTypes.Role, role.ToString())
                 },
                 expires: DateTime.UtcNow.AddMinutes(jwtOptions.Expires),
                 signingCredentials: new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SigningKey)), SecurityAlgorithms.HmacSha256)

@@ -35,7 +35,7 @@ namespace BlogApi.Services {
                 .Include(c => c.Post)
                 .SingleOrDefaultAsync(c => c.Id == commentId);
             if (comment is null) throw new BadRequestException("There isn't a comment with the provided id!");
-            if (comment.UserId != user.Id) throw new BadRequestException("Can't delete the comment");
+            if (comment.UserId != user.Id) throw new NotAuthorizedException();
             comment.Post.TotalComments--;
             _appDbContext.Set<Comment>().Remove(comment);
             await _appDbContext.SaveChangesAsync();
@@ -48,7 +48,7 @@ namespace BlogApi.Services {
                 .Include(c => c.Post)
                 .SingleOrDefaultAsync(c => c.Id == updateCommentDto.CommentId);
             if (comment is null) throw new BadRequestException("There isn't a comment with the provided id!");
-            if (comment.UserId != user.Id) throw new BadRequestException("Can't update the comment");
+            if (comment.UserId != user.Id) throw new NotAuthorizedException();
             comment.Content = updateCommentDto.Content;
             await _appDbContext.SaveChangesAsync();
             return new CommentDto { Id = comment.Id, Content = comment.Content, CommentedBy = user, CreatedAt = comment.CreatedAt };

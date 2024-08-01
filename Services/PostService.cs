@@ -9,7 +9,6 @@ using BlogApi.Exceptions;
 using BlogApi.ServiceContracts;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
 
 namespace BlogApi.Services {
     public class PostService : IPostService {
@@ -123,17 +122,18 @@ namespace BlogApi.Services {
         }
 
         public async Task<CompletePostDto> UpdatePost(UpdatePostDto updatePostDto) {
+            var user = HelperService.GetCreatedByUser(_httpContextAccessor);
             var post = await _appDbContext.Set<Post>()
                 .Include(p => p.Comments)
                 .ThenInclude(c => c.User)
                 .SingleOrDefaultAsync(p => p.Id == updatePostDto.Id);
+            if (post.CreatedBy != user.Id) throw new NotAuthorizedException();
             if (post is null) throw new BadRequestException("There isn't a post with the provided id!");
             var category = await _checkCategory(updatePostDto.CategoryId);
             if (category is null) throw new BadRequestException("There isn't a category with the provided id!");
             var tags = await _getTagsFromIdsAsync(updatePostDto.Tags);
             if (tags.Count != updatePostDto.Tags.Count) 
                 throw new BadRequestException("There aren't tags with the provided ids");
-            var user = HelperService.GetCreatedByUser(_httpContextAccessor);
 
 
             await _appDbContext.Set<PostTag>().Where(pt => pt.PostId == updatePostDto.Id).ExecuteDeleteAsync();
