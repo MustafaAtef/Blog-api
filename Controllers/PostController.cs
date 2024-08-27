@@ -11,10 +11,12 @@ namespace BlogApi.Controllers {
     [ApiController]
     public class PostController : ControllerBase {
         private readonly IPostService _postService;
+        private readonly ILogger<PostController> _logger;
 
-        public PostController(IPostService postService)
+        public PostController(IPostService postService, ILogger<PostController> logger)
         {
             _postService = postService;
+            _logger = logger;
         }
 
         [HttpPost]
@@ -25,6 +27,7 @@ namespace BlogApi.Controllers {
 
         [HttpGet]
         public async Task<ActionResult<PageList<CompactPostDto>>> GetAllPosts([FromQuery]SelectionOptions selectionOptions) {
+            _logger.LogInformation($"GetAllPosts Action Method with selection options {selectionOptions}");
             return await _postService.GetAllPosts(selectionOptions);
         }
         [HttpGet("{postId}")]

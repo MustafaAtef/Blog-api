@@ -5,22 +5,23 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using BlogApi.Dtos.Authentication;
 using BlogApi.Exceptions;
+using BlogApi.Repositories.Interfaces;
 
 namespace BlogApi.Services
 {
     public class AuthenticateUserService : IAuthenticateUserService {
         private readonly IPasswordHashingService _passwordHashingService;
-        private readonly AppDbContext _appDbContext;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IJwtTokenService _jwtTokenService;
 
-        public AuthenticateUserService(IPasswordHashingService passwordHashingService, AppDbContext appDbContext, IJwtTokenService jwtTokenService)
+        public AuthenticateUserService(IPasswordHashingService passwordHashingService, IUnitOfWork unitOfWork, IJwtTokenService jwtTokenService)
         {
             this._passwordHashingService = passwordHashingService;
-            this._appDbContext = appDbContext;
+            _unitOfWork = unitOfWork;
             this._jwtTokenService = jwtTokenService;
         }
         public async Task<AuthenticatedUserDto> LoginAsync(LoginUserDto loginUserDto) {
-            var user = await _appDbContext.Users.SingleOrDefaultAsync(u => u.Username == loginUserDto.Username);
+            var user = await _unitOfWork.UserRepository.Get(u => u.Username == loginUserDto.Username);
             if (user is null || !_passwordHashingService.Compare(user.Password, loginUserDto.Password)) {
                 throw new BadRequestException("username or password is invalid!");
             }
@@ -29,7 +30,7 @@ namespace BlogApi.Services
             user.RefreshToken = tokenRes.RefreshToken;
             user.RefreshTokenExpiration = tokenRes.RefreshTokenExpiration;
 
-            await _appDbContext.SaveChangesAsync();
+            await _unitOfWork.Complete();
 
             return new() {
                Token = tokenRes.Token,
@@ -42,7 +43,7 @@ namespace BlogApi.Services
             // TODO: check if the user is already exists 
 
             var hash = _passwordHashingService.Hash(signupUserDto.Password);
-            var user = await _appDbContext.Users.SingleOrDefaultAsync(u => u.Username == signupUserDto.Username || u.Email == signupUserDto.Email);
+            var user = await _unitOfWork.UserRepository.Get(u => u.Username == signupUserDto.Username || u.Email == signupUserDto.Email);
             if (user is not null) {
                 if (user.Username == signupUserDto.Username && user.Email == signupUserDto.Email) 
                     throw new UniqueEntityException("user", "username", "email");
@@ -55,8 +56,8 @@ namespace BlogApi.Services
             var tokenRes = _jwtTokenService.Generate(user.Id, user.Username, user.Email, user.Image, user.RoleId);
             user.RefreshToken = tokenRes.RefreshToken;
             user.RefreshTokenExpiration = tokenRes.RefreshTokenExpiration;
-            _appDbContext.Users.Add(user);
-            await _appDbContext.SaveChangesAsync();
+            _unitOfWork.UserRepository.Add(user);
+            await _unitOfWork.Complete();
             return new() {
                 Token = tokenRes.Token,
                 RefreashToken = tokenRes.RefreshToken
@@ -71,7 +72,7 @@ namespace BlogApi.Services
             // get the user of the difined user id in the claims identity
             if (!int.TryParse(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int userId))
                 throw new NotAuthenticatedException();
-            var user = await _appDbContext.Users.SingleOrDefaultAsync(u => u.Id == userId);
+            var user = await _unitOfWork.UserRepository.Get(u => u.Id == userId);
 
             //check if there is  a user with the id and the refresh token matches and dosn't expire
             if (user is null || user.RefreshToken != refreshTokenDto.RefreashToken || user.RefreshTokenExpiration <= DateTime.UtcNow) throw new NotAuthenticatedException();
@@ -82,7 +83,7 @@ namespace BlogApi.Services
             // update the user record with the new access token and refresh token 
             user.RefreshToken = tokenRes.RefreshToken;
             user.RefreshTokenExpiration = tokenRes.RefreshTokenExpiration;
-            await _appDbContext.SaveChangesAsync();
+            await _unitOfWork.Complete();
             return new() {
                 Token = tokenRes.Token,
                 RefreashToken = tokenRes.RefreshToken

@@ -1,14 +1,20 @@
 using BlogApi;
 using BlogApi.Database;
 using BlogApi.Middlewares;
+using BlogApi.Repositories;
+using BlogApi.Repositories.Interfaces;
 using BlogApi.ServiceContracts;
 using BlogApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+//builder.Host.UseSerilog((context, configurations) => {
+//    configurations.ReadFrom.Configuration(context.Configuration);
+//});
 
 builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
@@ -19,6 +25,7 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IReactService, ReactService>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("jwt"));
 

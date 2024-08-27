@@ -17,7 +17,7 @@ namespace BlogApi.Dtos.Post {
         public int? CategoryId { get; set; }
 
         [MinListElements(1, ErrorMessage ="Post must have at least one tag!")]
-        public IList<int>? Tags { get; set; }
+        public List<int>? Tags { get; set; }
     }
 
 }
